@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLB Showdown</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            text-align: center;
+            margin-top: 20px;
+        }
+        h2 {
+            text-align: center;
+            margin-top: 15px;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        li {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .start-button {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .start-button button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .start-button button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>MLB Showdown!</h1>
+    <h2> Play by Play</h2>
+    <div class="start-button">
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="final-result"></div>
+    <ul id="game-log" style="display: none;">
+        <!-- Game log entries will be displayed here -->
+    </ul>
+
+    <script>
+        // Function to start the game
+        function startGame() {
+            $.ajax({
+                url: '/start_game',
+                type: 'GET',
+                success: function(data) {
+                    // Update game log
+                    var gameLogElement = $('#game-log');
+                    gameLogElement.empty(); // Clear existing content
+                    data.game_log.forEach(function(logItem) {
+                        gameLogElement.append('<li>' + logItem + '</li>'); // Display each at-bat result
+                    });
+
+                    // Update final result
+                    var finalResultElement = $('#final-result');
+                    finalResultElement.text('Final Result: ' + data.final_result);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error starting game:', error);
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
+
