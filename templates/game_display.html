@@ -14,7 +14,7 @@
             margin-top: 20px;
         }
         h2 {
-            text-align: center;
+            text-align: left;
             margin-top: 15px;
         }
         ul {
@@ -44,44 +44,79 @@
         .start-button button:hover {
             background-color: #45a049;
         }
+        .scoreboard {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
     <h1>MLB Showdown!</h1>
-    <h2> Play by Play</h2>
+    <div class="playbyplay">
+        <h2>Play by Play</h2>
+    </div>
     <div class="start-button">
-        <button onclick="startGame()">Start Game</button>
+        <button id="start-game">Play Ball</button>
+    </div>
+    <div class="scoreboard" id="scoreboard">
+        <h3>Scoreboard</h3>
+        <div id="final-score"></div>
+    </div>
+    <div id="inning-results">
+        <!-- Inning results will be displayed here -->
     </div>
     <div id="final-result"></div>
-    <ul id="game-log" style="display: none;">
-        <!-- Game log entries will be displayed here -->
-    </ul>
 
-    <script>
-        // Function to start the game
-        function startGame() {
-            $.ajax({
-                url: '/start_game',
-                type: 'GET',
-                success: function(data) {
-                    // Update game log
-                    var gameLogElement = $('#game-log');
-                    gameLogElement.empty(); // Clear existing content
-                    data.game_log.forEach(function(logItem) {
-                        gameLogElement.append('<li>' + logItem + '</li>'); // Display each at-bat result
+<script>
+    $('#start-game').click(function() {
+        $.ajax({
+            url: '/start_game',
+            type: 'GET',
+            success: function(data) {
+                var inningResultsElement = $('#inning-results');
+                inningResultsElement.empty();
+
+                $.each(data.inning_results, function(inningIndex, inningData) {
+                    // Display top half results
+                    inningResultsElement.append('<h4>Top ' + (inningIndex + 1) + '</h4>');
+                    var topHalfResultsElement = $('<ul></ul>');
+                    $.each(inningData.top_half_results, function(index, logItem) {
+                        topHalfResultsElement.append('<li>' + logItem + '</li>'); // Display each at-bat result
                     });
+                    inningResultsElement.append(topHalfResultsElement);
 
-                    // Update final result
-                    var finalResultElement = $('#final-result');
-                    finalResultElement.text('Final Result: ' + data.final_result);
-                },
-                error: function(xhr, status, error) {
-                    console.error('Error starting game:', error);
-                }
-            });
-        }
-    </script>
+                    // Display bottom half results
+                    inningResultsElement.append('<h4>Bottom ' + (inningIndex + 1) + '</h4>');
+                    var bottomHalfResultsElement = $('<ul></ul>');
+                    $.each(inningData.bottom_half_results, function(index, logItem) {
+                        bottomHalfResultsElement.append('<li>' + logItem + '</li>'); // Display each at-bat result
+                    });
+                    inningResultsElement.append(bottomHalfResultsElement);
+                });
 
+                // Update final result
+                var finalResultElement = $('#final-result');
+                finalResultElement.text('Final Result: ' + data.final_result);
+
+                var finalScoreElement = $('#final-score');
+                finalScoreElement.text('Home: ' + data.home_score + ' | Away: ' + data.away_score);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error starting game:', error);
+        
+            }
+        });
+    });
+</script>
 </body>
 </html>
+
+
+
+
 

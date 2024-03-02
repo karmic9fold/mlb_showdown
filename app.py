@@ -1,7 +1,9 @@
+# main game file
 import sys
 from flask import Flask, render_template, jsonify
 from random import randint
 from time import sleep
+# from ddtrace import patch_all
 from home_team import home_lineup as HL, home_pitching_staff as HPS
 from away_team import away_lineup as AL, away_pitching_staff as APS
 from mlb_scoreboard import Scoreboard as SB
@@ -18,38 +20,51 @@ class MLB_Showdown:
         self.AL = AL
         self.APS = APS
 
-    def away_inning():
+    def away_inning(self):
+        sb = self.scoreboard
+        mlb_game = self
+        at_bat_results = []
         sb.display_scoreboard()
         while i.outs < 3:
                 batter = AL.pop(0)
                 pitcher = HPS[0]
                 ab = AB(pitcher, batter, mlb_game) 
                 ab.check_advantage()
-                ab.swing_result()
+                result = ab.swing_result()
+                at_bat_results.append(result)
                 AL.append(batter)
-                sleep(1)
+                sleep(.1)
         sb.update_away_score()
         ab.home_inning_pitched()
         sb.update_inning()
-        sleep(2.5)
+        sleep(.1)
+        return at_bat_results
             
-    def home_inning():
+    def home_inning(self):
+        sb = self.scoreboard
+        mlb_game = self
         sb.display_scoreboard()
+        at_bat_results = []
         while i.outs < 3:
                 batter = HL.pop(0)
                 pitcher = APS[0]
                 ab = AB(pitcher, batter, mlb_game)
                 ab.check_advantage()
-                ab.swing_result()
+                result = ab.swing_result()
+                at_bat_results.append(result)
                 HL.append(batter)
-                sleep(1)
+                sleep(.1)
         sb.update_home_score()
         ab.away_inning_pitched()
         sb.update_inning()
-        sleep(2.5)
+        sleep(.1)
+        return at_bat_results
 
-    def home_extra_inning():
+    def home_extra_inning(self):
+        sb = self.scoreboard
+        mlb_game = self
         sb.display_scoreboard()
+        at_bat_results = []
         while i.outs < 3:
             if sb.home_score > sb.away_score:
                 break
@@ -58,17 +73,18 @@ class MLB_Showdown:
                 pitcher = APS[0]
                 ab = AB(pitcher, batter, mlb_game)
                 ab.check_advantage()
-                ab.swing_result()
+                result = ab.swing_result()
+                at_bat_results.append(result)
                 HL.append(batter)
                 sb.check_game_over()
-                sleep(1)
+                sleep(.1)
         sb.update_extra_home_score()
         ab.away_inning_pitched()
         sb.update_inning()
-        sleep(2.5)
+        sleep(.1)
+        return at_bat_results
 
 mlb_game = MLB_Showdown()
-game_log = []
 i = mlb_game.inning
 sb = mlb_game.scoreboard
 
@@ -79,33 +95,41 @@ def index():
     return render_template ('game_display.html')
 
 @app.route('/start_game')
-def start_game():   
-    while sb.inning < 3:
-        MLB_Showdown.away_inning()
-        game_log.append(str(sb.display_scoreboard()))
+def start_game():
+    print("The game has started") 
+    inning_results = []  # Initialize inning_results list
+    final_result = None
 
-        if sb.inning > 2.5:
-            if sb.home_score > sb.away_score:
-                break
-            else:
-                MLB_Showdown.home_extra_inning()
-                game_log.append(str(sb.display_scoreboard()))
-        else:
-            MLB_Showdown.home_inning()
-            game_log.append(str(sb.display_scoreboard()))
+    while mlb_game.scoreboard.inning < 3:
+        inning_data = {
+            'top_half_results': mlb_game.away_inning(),
+            'bottom_half_results': mlb_game.home_inning()
+        }
+        inning_results.append(inning_data)
 
-    while sb.home_score == sb.away_score:
-        MLB_Showdown.away_inning()
-        game_log.append(str(sb.display_scoreboard()))
-        MLB_Showdown.home_extra_inning()
-        game_log.append(str(sb.display_scoreboard()))
+    while mlb_game.scoreboard.home_score == mlb_game.scoreboard.away_score:
+        inning_data = {
+            'top_half_results': mlb_game.away_inning(),
+            'bottom_half_results': mlb_game.home_inning()
+        }
+        inning_results.append(inning_data)
 
-        if sb.home_score != sb.away_score:
-            break
+    final_result = mlb_game.scoreboard.display_final()
+    home_score = mlb_game.scoreboard.home_score
+    away_score  = mlb_game.scoreboard.away_score
 
-    final_result = sb.display_final()
+    print("Inning Results:", inning_results)
+    print("Final result:", final_result)
 
-    return jsonify({'game_log': game_log, 'final_result': final_result})
+    return jsonify({'inning_results': inning_results, 
+                    'final_result': final_result,
+                    'home_score': home_score,
+                    'away_score': away_score
+                    })
+
+# DD_SERVICE="MLBShowdown" 
+# DD_ENV="MLBtest"
+# DD_LOGS_INJECTION=true
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(debug=True)

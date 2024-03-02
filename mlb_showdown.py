@@ -67,3 +67,8 @@ class MLB_Showdown:
         ab.away_inning_pitched()
         sb.update_inning()
         sleep(2.5)
+
+
+
+return(f"Inning: BOT {self.inning}, Home: {self.home_score}, \
+Away: {self.away_score}")
