@@ -1,1 +1,1 @@
-export PS1="showdown >> "
+export PS1="Staffordhub >> "
