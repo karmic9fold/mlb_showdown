@@ -1,5 +1,7 @@
 # main game file
 import sys
+import ddtrace
+from ddtrace import tracer
 from flask import Flask, render_template, jsonify
 from random import randint
 from time import sleep
